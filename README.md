@@ -31,3 +31,5 @@ Para limpiar todos los archivos generados pos ejecución se debe ejecutar
 $ make clear
 ```
 ## Instancias
+Son archivos que contienen todos los parámetros necesarios para que la F.O. del problema
+encuentre la(s) solución(es).

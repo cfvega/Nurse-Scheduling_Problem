@@ -1,8 +1,8 @@
 all: NSP
 
 NSP: NSP.o
-	gcc -Wall -o NSP NSP.o
+	g++ -Wall -o NSP NSP.o
 NSP.o: NSP.cpp
-	gcc -Wall -c NSP.cpp
-clean:
+	g++ -Wall -c NSP.cpp
+clear:
 	rm *.o NSP

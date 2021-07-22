@@ -32,4 +32,4 @@ $ make clear
 ```
 ## Instancias
 Son archivos que contienen todos los parámetros necesarios para que la F.O. del problema
-encuentre la(s) solución(es).
+encuentre la(s) solución(es)

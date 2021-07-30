@@ -12,19 +12,22 @@ using namespace std;
 
 struct Shifts {
     char id;
-    int length;
-    vector<char> shifts_prohibited;
+    int length; // lt
+    vector<char> shifts_prohibited; // Rt
 };
 struct Employee {
     char id;
-    char *maxShift;
-    int maxTotalMinutes;
-    int minTotalMinutes;
-    int maxConsecutivesShift;
-    int minConsecutivesShift;
-    int maxWeekend;
-    vector<int> daysOff;
+    char *maxShift; // mit
+    int maxTotalMinutes; // ci
+    int minTotalMinutes; // bi
+    int maxConsecutivesShift; // gi
+    int minConsecutivesShift; // fi
+    int minConsecutivesDays; // fi
+    int maxWeekend; // ai
+    vector<int> daysOff; // Ni
 };
+
+// Penalties
 struct Qidt {
     char idEmployee;
     char idShift;
@@ -45,34 +48,49 @@ struct SUVidt {
     int weightFO; // Vidt
 };
 
+struct Assignment {
+    int indexDay;
+    int idShift;
+    int decision;
+    vector <Assignment> conflics;
+};
+
+// Decision Variable
+struct Xidt {
+    char idEmployee;
+    vector <Assignment> horizon;
+};
+struct Kiw {
+    char idEmployee;
+    int indexWeekend;
+    int decision;
+};
+struct Ydt {
+    int indexDay;
+    int idShift;
+    int totalBelow;
+};
+struct Zdt {
+    int indexDay;
+    char idShift;
+    int totalAdove;
+};
 
 // Parameters
 vector<struct Employee> I;
 int h;
-int D;
-int W;
+// int D;
+// int W;
 vector<struct Shifts> T;
 vector<struct Qidt> penaltyQ;
 vector<struct Pidt> penaltyP;
 vector<struct SUVidt> penaltySUV;
 
+vector<struct Xidt> varXidt;
+vector<struct Kiw> varKiw;
+vector<struct Ydt> varYdt;
+vector<struct Zdt> varZdt;
 
-
-
-vector<string> split (string s, string delimiter) {
-    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
-    string token;
-    vector<string> res;
-
-    while ((pos_end = s.find (delimiter, pos_start)) != string::npos) {
-        token = s.substr (pos_start, pos_end - pos_start);
-        pos_start = pos_end + delim_len;
-        res.push_back (token);
-    }
-
-    res.push_back (s.substr (pos_start));
-    return res;
-}
 
 void readFile( FILE *fp ) {
     char *line = NULL;
@@ -86,7 +104,6 @@ void readFile( FILE *fp ) {
         if( line == NULL)
             continue;
         if( line[0] != '#' ) {
-            // OK
             if( strcmp(line, "SECTION_HORIZON") == 0 ) {
                 getline(&line, &len, fp);
                 line = strtok(line, "\r\n");
@@ -97,7 +114,6 @@ void readFile( FILE *fp ) {
                 h = atoi(line);
                 continue;
             }
-            // -...
             if( strcmp(line, "SECTION_SHIFTS") == 0 ) {
 
                 getline(&line, &len, fp);
@@ -162,7 +178,9 @@ void readFile( FILE *fp ) {
 
                     // Get S
                     token = strtok(NULL, ",");
+
                     employee.maxShift = token;
+                    // printf("%s\n",ff);
                     // char *ee = strtok(token, "|");
                     // while( ee != NULL )  {
                     //     printf("%\n",*ee);
@@ -177,10 +195,13 @@ void readFile( FILE *fp ) {
                     token = strtok(NULL, ",");
                     employee.minConsecutivesShift = atoi(token);
                     token = strtok(NULL, ",");
+                    employee.minConsecutivesDays = atoi(token);
+                    token = strtok(NULL, ",");
                     employee.maxWeekend = atoi(token);
                     // printf("%d\n", employee.maxWeekend);
                     // Add to I
                     I.push_back(employee);
+                    
                     
                     // next line
                     getline(&line, &len, fp);
@@ -218,7 +239,6 @@ void readFile( FILE *fp ) {
                 }
                 continue;
             }
-
             if( strcmp(line, "SECTION_SHIFT_ON_REQUESTS") == 0 ) {
 
                 getline(&line, &len, fp);
@@ -260,7 +280,6 @@ void readFile( FILE *fp ) {
                 }
                 continue;
             }
-
             if( strcmp(line, "SECTION_SHIFT_OFF_REQUESTS") == 0 ) {
 
                 getline(&line, &len, fp);
@@ -302,7 +321,6 @@ void readFile( FILE *fp ) {
                 }
                 continue;
             }
-
             if( strcmp(line, "SECTION_COVER") == 0 ) {
 
                 getline(&line, &len, fp);
@@ -351,10 +369,110 @@ void readFile( FILE *fp ) {
             }
         }
     }
+    printf("%s\n", I[0].maxShift);
     
     if(line)
         free(line);
 }
+
+
+
+// Strong restrictions
+int maxShiftDay( int index ) {
+    int sum = 0;
+    vector <Assignment> x = varXidt[index].horizon;
+    
+
+    for( int d = 0; d<=h; d++ ) {
+        for( int i = 0; i<=x.size(); i++ ) {
+            //printf("%d\n",x[i].indexDay);
+            if( d == x[i].indexDay ) {
+                sum++;
+            }
+        }
+        if( sum > 1 ) {
+            printf("aa\n");
+            return 0;
+        }
+        sum = 0;
+    }
+    return 1;
+}
+
+int countShift( int type, int employee ) {
+    struct Employee e = I[employee];
+
+    // int count = count_if(  )
+return 0;
+}
+
+
+void solve( ) {
+    
+    // TODO: implement F.O
+
+    // TODO: CHECK MAXSHIFT on EMPLOYEE
+
+    // TODO:
+    // 0. Check days_off
+    // 1. add pos to Xidt
+    // 2. check all constrains and push conflicts
+    // 3. while conflics > 0 sort conflicts and goto
+    // 4. die
+    // binary?
+
+    for( int i=0; i<I.size(); i++) {
+        struct Xidt var;
+        struct Employee employee = I[i];
+        var.idEmployee = employee.id;
+
+
+        printf("%s\n", employee.maxShift);
+        break;
+
+        for( int d=0; d<h; d++ ) {
+            
+            // check dayoff
+            if( find(employee.daysOff.begin(),employee.daysOff.end(), d ) != employee.daysOff.end() ) {
+                // Goto: next day
+                continue;
+            }
+
+            for( int t=0; t<T.size(); t++) {
+
+                // TODO: check max Mit
+
+                struct Assignment horizon;
+                horizon.indexDay = d;
+                horizon.idShift = t;
+                horizon.decision = 1;
+                var.horizon.push_back(horizon);
+
+
+
+
+
+                // if( maxShiftDay(i) != 1) {
+                //     var.horizon.pop_back();
+                // }
+
+                if(t++ > T.size()) {
+                    // dom(T) = vacio
+                    // d++;
+                    break;
+                }
+            }
+        }
+        varXidt.push_back(var);
+    }
+
+
+
+
+
+}
+
+
 
 
 int main( int argc, char *argv[] ) {
@@ -364,11 +482,12 @@ int main( int argc, char *argv[] ) {
     // gettimeofday(&begin, 0);
     //END BORRAR
 
-    if( argc == 3) {
+    if( argc > 2) {
         FILE *fp;
         fp = fopen(argv[1], "r");
         cout<<"Iniciando lectura de la instancia...\n";
         readFile(fp);
+        printf("%s\n", I[0].maxShift);
         
         // gettimeofday(&end, 0);
         // long seconds = end.tv_sec - begin.tv_sec;
@@ -377,6 +496,8 @@ int main( int argc, char *argv[] ) {
         // printf("Time measured: %.3f seconds.\n", elapsed);
         
         cout<<"Lectura de la instancia finalizada.\n";
+        cout<<"Iniciando calculos ....\n";
+        solve( );
         fclose(fp);
 
     } else {

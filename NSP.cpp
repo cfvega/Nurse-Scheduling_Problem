@@ -17,7 +17,7 @@ struct Shifts {
 };
 struct Employee {
     char id;
-    char *maxShift; // mit
+    vector<int> maxShift; // mit
     int maxTotalMinutes; // ci
     int minTotalMinutes; // bi
     int maxConsecutivesShift; // gi
@@ -178,8 +178,8 @@ void readFile( FILE *fp ) {
 
                     // Get S
                     token = strtok(NULL, ",");
-
-                    employee.maxShift = token;
+                    char *ee = token;
+                    // employee.maxShift ="";
                     // printf("%s\n",ff);
                     // char *ee = strtok(token, "|");
                     // while( ee != NULL )  {
@@ -198,7 +198,15 @@ void readFile( FILE *fp ) {
                     employee.minConsecutivesDays = atoi(token);
                     token = strtok(NULL, ",");
                     employee.maxWeekend = atoi(token);
-                    // printf("%d\n", employee.maxWeekend);
+                    //printf("%d\n", employee.maxWeekend);
+
+                    char *ff = strtok(ee, "|");
+                    //ff = strtok(NULL, ",");
+                    while( ff != NULL ) {
+                        employee.maxShift.push_back(atoi(ff+2));
+                        ff = strtok(NULL, ",");
+                    }
+
                     // Add to I
                     I.push_back(employee);
                     
@@ -369,7 +377,6 @@ void readFile( FILE *fp ) {
             }
         }
     }
-    printf("%s\n", I[0].maxShift);
     
     if(line)
         free(line);
@@ -401,6 +408,7 @@ int maxShiftDay( int index ) {
 
 int countShift( int type, int employee ) {
     struct Employee e = I[employee];
+    printf("%d\n", e.maxShift[0]);
 
     // int count = count_if(  )
 return 0;
@@ -426,8 +434,6 @@ void solve( ) {
         struct Employee employee = I[i];
         var.idEmployee = employee.id;
 
-
-        printf("%s\n", employee.maxShift);
         break;
 
         for( int d=0; d<h; d++ ) {
@@ -441,6 +447,18 @@ void solve( ) {
             for( int t=0; t<T.size(); t++) {
 
                 // TODO: check max Mit
+                int maxShift = employee.maxShift[t];
+                int count = 0;
+                for( int kk = 0; kk < var.horizon.size(); kk++ ) {
+                    if( var.horizon[kk].idShift == t ) {
+                        count++;
+                    }
+                }
+                if ( count > maxShift ) {
+                    continue;
+                }
+
+
 
                 struct Assignment horizon;
                 horizon.indexDay = d;
@@ -487,7 +505,7 @@ int main( int argc, char *argv[] ) {
         fp = fopen(argv[1], "r");
         cout<<"Iniciando lectura de la instancia...\n";
         readFile(fp);
-        printf("%s\n", I[0].maxShift);
+        //printf("%s\n", I[0].maxShift);
         
         // gettimeofday(&end, 0);
         // long seconds = end.tv_sec - begin.tv_sec;

@@ -2,11 +2,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-
-// BORRAR
-// #include <sys/time.h>
-//END BORRAR
-
+#include <sys/time.h>
 
 using namespace std;
 
@@ -48,11 +44,14 @@ struct SUVidt {
     int weightFO; // Vidt
 };
 
+
 struct Assignment {
     int indexDay;
-    int idShift;
-    int decision;
-    vector <Assignment> conflics;
+    char shift;
+};
+struct Conflicts {
+    int idAssign;
+    vector <Assignment> conflicts;
 };
 
 // Decision Variable
@@ -90,6 +89,14 @@ vector<struct Xidt> varXidt;
 vector<struct Kiw> varKiw;
 vector<struct Ydt> varYdt;
 vector<struct Zdt> varZdt;
+vector<struct Conflicts> conflics;
+
+int countConsectiveDays = 0;
+int countMinutsAssigned = 0;
+int countFreeConsectiveDays = 0;
+
+Assignment lastAssign;
+
 
 
 void readFile( FILE *fp ) {
@@ -406,24 +413,14 @@ int maxShiftDay( int index ) {
     return 1;
 }
 
-int countShift( int type, int employee ) {
-    struct Employee e = I[employee];
-    printf("%d\n", e.maxShift[0]);
-
-    // int count = count_if(  )
-return 0;
-}
-
 
 void solve( ) {
     
     // TODO: implement F.O
 
-    // TODO: CHECK MAXSHIFT on EMPLOYEE
-
     // TODO:
-    // 0. Check days_off
     // 1. add pos to Xidt
+    // 0. Check days_off
     // 2. check all constrains and push conflicts
     // 3. while conflics > 0 sort conflicts and goto
     // 4. die
@@ -434,56 +431,146 @@ void solve( ) {
         struct Employee employee = I[i];
         var.idEmployee = employee.id;
 
-        break;
 
         for( int d=0; d<h; d++ ) {
-            
-            // check dayoff
-            if( find(employee.daysOff.begin(),employee.daysOff.end(), d ) != employee.daysOff.end() ) {
-                // Goto: next day
-                continue;
-            }
 
             for( int t=0; t<T.size(); t++) {
 
-                // TODO: check max Mit
-                int maxShift = employee.maxShift[t];
-                int count = 0;
-                for( int kk = 0; kk < var.horizon.size(); kk++ ) {
-                    if( var.horizon[kk].idShift == t ) {
-                        count++;
-                    }
+                // select and set value
+                struct Assignment horizon;
+                horizon.indexDay = d;
+                horizon.shift = T[t].id;
+                var.horizon.push_back(horizon);
+
+                //sum params
+                countConsectiveDays++;
+                countMinutsAssigned += T[t].length;
+                printf("revisando (%d) %c - %c\n ", d,employee.id,T[t].id);
+
+
+                
+
+                // TODO: Revisar
+                if( countConsectiveDays > employee.maxConsecutivesShift) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+
+                    countFreeConsectiveDays++;
+                    continue;
                 }
-                if ( count > maxShift ) {
+                // TODO: Ver aca o abajo
+                if( countConsectiveDays < employee.minConsecutivesShift) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+
+                    countFreeConsectiveDays++;
+                    continue;
+                }
+                if( countFreeConsectiveDays < employee.minConsecutivesDays) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+
+                    countFreeConsectiveDays++;
+                    continue;
+                }
+                if( find( T[t].shifts_prohibited.begin(),T[t].shifts_prohibited.end(), t ) != T[t].shifts_prohibited.end() ) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+
+                    countFreeConsectiveDays++;
                     continue;
                 }
 
 
 
-                struct Assignment horizon;
-                horizon.indexDay = d;
-                horizon.idShift = t;
-                horizon.decision = 1;
-                var.horizon.push_back(horizon);
 
+                // OK?
+                if( countMinutsAssigned > employee.maxTotalMinutes) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
 
+                    countFreeConsectiveDays++;
+                    continue;
+                }
+                // check dayoff
+                if( find(employee.daysOff.begin(),employee.daysOff.end(), d ) != employee.daysOff.end() ) {
+                    // Goto: next day
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
 
-
-
-                // if( maxShiftDay(i) != 1) {
-                //     var.horizon.pop_back();
-                // }
-
+                    countFreeConsectiveDays++;
+                    continue;
+                }
+                
                 if(t++ > T.size()) {
                     // dom(T) = vacio
                     // d++;
                     break;
                 }
+                lastAssign = horizon;
             }
         }
         varXidt.push_back(var);
+        countConsectiveDays = 0;
+        countFreeConsectiveDays =0;
+        countMinutsAssigned = 0;
     }
 
+
+
+
+
+
+
+/*     for( int d=0; d<h; d++ ) {
+        struct Xidt var;
+
+        for( int t=0; t<T.size(); t++) {
+
+            for( int i=0; i<I.size(); i++) {
+                struct Employee employee = I[i];
+                var.idEmployee = employee.id;
+
+                struct Assignment horizon;
+                horizon.indexDay = d;
+                horizon.shift = T[t].id;
+                var.horizon.push_back(horizon);
+
+                // TODO; check constrains, if employee is ok to (d,t).
+
+                if( find(employee.daysOff.begin(),employee.daysOff.end(), d ) != employee.daysOff.end() ) {
+                    // next employee
+                    var.pop_back();
+                    continue;
+                }
+                int sum = 0;
+
+                for( int kk=0; kk<varXidt.size(); kk++ ) {
+                    // TODO: verify maxShift
+                    if( varXidt[i].horizon[kk].shift == T[t] ){
+                        sum++;
+                    }
+                }
+
+                if( sum > employee.maxShift){
+                    // next employee
+                    var.pop_back();
+                    continue;
+                }
+
+
+
+            }
+
+        }
+    }
+ */
 
 
 
@@ -517,7 +604,6 @@ int main( int argc, char *argv[] ) {
         cout<<"Iniciando calculos ....\n";
         solve( );
         fclose(fp);
-
     } else {
         printf("Revise los parámetros de inicialización.");
         return 1;

@@ -25,13 +25,13 @@ struct Employee {
 
 // Penalties
 struct Qidt {
-    char idEmployee;
+    char idEmployee[2];
     char idShift;
     int indexDay;
     int weight;
 };
 struct Pidt {
-    char idEmployee;
+    char idEmployee[2];
     char idShift;
     int indexDay;
     int weight;
@@ -78,6 +78,7 @@ int countMinutsAssigned = 0;
 int countFreeConsectiveDays = 0;
 int weekend = 0;
 int okDay = 1;
+int flag = 0;
 struct Assignment lastAssign;
 
 
@@ -256,7 +257,7 @@ void readFile( FILE *fp ) {
                     
                     // get EmployeeID
                     char *token = strtok(line, ",");
-                    penalty.idEmployee = *token;
+                    strcpy(penalty.idEmployee, token);
                     
                     // get Day
                     token = strtok(NULL, ",");
@@ -297,7 +298,7 @@ void readFile( FILE *fp ) {
                     
                     // get EmployeeID
                     char *token = strtok(line, ",");
-                    penalty.idEmployee = *token;
+                    strcpy(penalty.idEmployee, token);
                     
                     // get Day
                     token = strtok(NULL, ",");
@@ -387,6 +388,9 @@ void solve( ) {
     // 4. die
     // binary?
 
+    vector<struct SUVidt> new_vec(penaltySUV.size());
+    copy(penaltySUV.begin(), penaltySUV.end(), new_vec.begin());
+
     for( int i=0; i<I.size(); i++) {
         struct Xidt var;
         struct Employee employee = I[i];
@@ -407,10 +411,6 @@ void solve( ) {
             // Get last T[t]
 
             for( int t=0; t<T.size(); t++) {
-
-
-                // no trabajar en dia que no quiere, caso de error volver a esta
-
                 // select and set value
                 horizon.indexDay = d;
                 horizon.shift = T[t].id;
@@ -428,8 +428,50 @@ void solve( ) {
                 // checking cover
                 // buscar
 
+                int break_ = 0;
 
 
+                // for( int jj=0; jj<new_vec.size(); jj++ ) {
+                //     if( new_vec[jj].idShift == T[t].id && new_vec[jj].indexDay == d ) {
+                //         if( new_vec[jj].requirement == 0 ) {
+                //             break_ = 1;
+                //             break;
+                //         }
+                //         new_vec[jj].requirement--;
+                //     }
+                // }
+
+
+
+
+                
+
+                // // First loop
+                // if(flag == 0) {
+                //     // soft
+                //     for( int j=0; j<penaltyP.size(); j++ ){
+                //         if( strcmp(penaltyP[j].idEmployee, employee.id) == 0 && penaltyP[j].idShift==T[t].id && penaltyP[j].indexDay == d ) {
+                //             break_ = 1;
+                //             break;
+                //         }
+                //     }
+                // }
+
+
+
+
+                if( break_ == 1) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+                    countTypeShift[t]--;
+                    countFreeConsectiveDays = 0;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
+
+                    continue;
+                }
 
                 // CONSTRAINS
 
@@ -445,9 +487,9 @@ void solve( ) {
 
                     continue;
                 }
-                if( countFreeConsectiveDays < employee.minConsecutivesDays ) {
+                if( countFreeConsectiveDays > 0 && countFreeConsectiveDays < employee.minConsecutivesDays ) {
                     var.horizon.pop_back();
-                    countConsectiveDays--;
+                    countConsectiveDays = 0;
                     countMinutsAssigned -= T[t].length;
                     countTypeShift[t]--;
                     if( d%7 == 0  || d%6 == 0) {
@@ -524,11 +566,28 @@ void solve( ) {
                         continue;
                     }
                 }
+
+
                 lastAssign = horizon;
                 okDay = 1;
+                
             }
+
+            //next day
+
+
+
+
+            // if( flag == 0 ){
+            //     flag = 1;
+            //     --d;
+            // }
             if( okDay == 0 ){
                 countFreeConsectiveDays++;
+                countConsectiveDays = 0;
+            }else{
+                countFreeConsectiveDays = 0;
+                countConsectiveDays++;
             }
             okDay = 0;
 
@@ -627,26 +686,25 @@ void printResult() {
 
 int main( int argc, char *argv[] ) {
 
-    //struct timeval begin, end;
-    //gettimeofday(&begin, 0);
+    struct timeval begin, end;
+    gettimeofday(&begin, 0);
 
     if( argc > 2) {
         FILE *fp;
         fp = fopen(argv[1], "r");
-        cout<<"Iniciando lectura de la instancia...\n";
+        // cout<<"Iniciando lectura de la instancia...\n";
         readFile(fp);
-        //printf("%s\n", I[0].maxShift);
-        
-        // gettimeofday(&end, 0);
-        // long seconds = end.tv_sec - begin.tv_sec;
-        // long microseconds = end.tv_usec - begin.tv_usec;
-        // double elapsed = seconds + microseconds*1e-6;
-        // printf("Time measured: %.3f seconds.\n", elapsed);
-        
-        cout<<"Lectura de la instancia finalizada.\n";
-        cout<<"Iniciando calculos ....\n";
         solve( );
         printResult();
+        gettimeofday(&end, 0);
+        long seconds = end.tv_sec - begin.tv_sec;
+        long microseconds = end.tv_usec - begin.tv_usec;
+        double elapsed = seconds + microseconds*1e-6;
+        printf("Time measured: %.3f seconds.\n", elapsed);
+        
+        // cout<<"Lectura de la instancia finalizada.\n";
+        // cout<<"Iniciando calculos ....\n";
+
         fclose(fp);
     } else {
         printf("Revise los parámetros de inicialización.");

@@ -12,7 +12,7 @@ struct Shifts {
     vector<char> shifts_prohibited; // Rt
 };
 struct Employee {
-    char id;
+    char id[2];
     vector<int> maxShift; // mit
     int maxTotalMinutes; // ci
     int minTotalMinutes; // bi
@@ -56,23 +56,8 @@ struct Conflicts {
 
 // Decision Variable
 struct Xidt {
-    char idEmployee;
+    char idEmployee[2];
     vector <Assignment> horizon;
-};
-struct Kiw {
-    char idEmployee;
-    int indexWeekend;
-    int decision;
-};
-struct Ydt {
-    int indexDay;
-    int idShift;
-    int totalBelow;
-};
-struct Zdt {
-    int indexDay;
-    char idShift;
-    int totalAdove;
 };
 
 // Parameters
@@ -86,16 +71,14 @@ vector<struct Pidt> penaltyP;
 vector<struct SUVidt> penaltySUV;
 
 vector<struct Xidt> varXidt;
-vector<struct Kiw> varKiw;
-vector<struct Ydt> varYdt;
-vector<struct Zdt> varZdt;
 vector<struct Conflicts> conflics;
 
 int countConsectiveDays = 0;
 int countMinutsAssigned = 0;
 int countFreeConsectiveDays = 0;
-
-Assignment lastAssign;
+int weekend = 0;
+int okDay = 1;
+struct Assignment lastAssign;
 
 
 
@@ -181,7 +164,8 @@ void readFile( FILE *fp ) {
 
                     // Get EmployeeID
                     char *token = strtok(line, ",");
-                    employee.id = *token;
+                    strcpy(employee.id, token);
+                    // employee.id = *token;
 
                     // Get S
                     token = strtok(NULL, ",");
@@ -391,29 +375,6 @@ void readFile( FILE *fp ) {
 
 
 
-// Strong restrictions
-int maxShiftDay( int index ) {
-    int sum = 0;
-    vector <Assignment> x = varXidt[index].horizon;
-    
-
-    for( int d = 0; d<=h; d++ ) {
-        for( int i = 0; i<=x.size(); i++ ) {
-            //printf("%d\n",x[i].indexDay);
-            if( d == x[i].indexDay ) {
-                sum++;
-            }
-        }
-        if( sum > 1 ) {
-            printf("aa\n");
-            return 0;
-        }
-        sum = 0;
-    }
-    return 1;
-}
-
-
 void solve( ) {
     
     // TODO: implement F.O
@@ -429,97 +390,162 @@ void solve( ) {
     for( int i=0; i<I.size(); i++) {
         struct Xidt var;
         struct Employee employee = I[i];
-        var.idEmployee = employee.id;
+        strcpy(var.idEmployee, employee.id);
+        // var.idEmployee = employee.id;
+        int countTypeShift[T.size()];
+
+        for(int ii=0;ii<T.size();ii++) {
+            countTypeShift[ii]=0;
+        }
 
 
         for( int d=0; d<h; d++ ) {
+            // select and set value
+            struct Assignment horizon;
+
+
+            // Get last T[t]
 
             for( int t=0; t<T.size(); t++) {
 
+
+                // no trabajar en dia que no quiere, caso de error volver a esta
+
                 // select and set value
-                struct Assignment horizon;
                 horizon.indexDay = d;
                 horizon.shift = T[t].id;
                 var.horizon.push_back(horizon);
 
                 //sum params
-                countConsectiveDays++;
                 countMinutsAssigned += T[t].length;
-                printf("revisando (%d) %c - %c\n ", d,employee.id,T[t].id);
+                countConsectiveDays++;
+                countTypeShift[t]++;
+
+                if( d%7 == 0  || d%6 == 0) {
+                    weekend++;
+                }
+
+                // checking cover
+                // buscar
 
 
+
+
+                // CONSTRAINS
+
+                if( okDay == 1 ){
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+                    countTypeShift[t]--;
+                    countFreeConsectiveDays = 0;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
+
+                    continue;
+                }
+                if( countFreeConsectiveDays < employee.minConsecutivesDays ) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+                    countTypeShift[t]--;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
+
+                    continue;
+                }
                 
 
-                // TODO: Revisar
-                if( countConsectiveDays > employee.maxConsecutivesShift) {
+
+                if( countTypeShift[t] > employee.maxShift[t] ) {
                     var.horizon.pop_back();
                     countConsectiveDays--;
                     countMinutsAssigned -= T[t].length;
+                    countTypeShift[t]--;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
 
-                    countFreeConsectiveDays++;
                     continue;
                 }
-                // TODO: Ver aca o abajo
-                if( countConsectiveDays < employee.minConsecutivesShift) {
-                    var.horizon.pop_back();
-                    countConsectiveDays--;
-                    countMinutsAssigned -= T[t].length;
-
-                    countFreeConsectiveDays++;
-                    continue;
-                }
-                if( countFreeConsectiveDays < employee.minConsecutivesDays) {
-                    var.horizon.pop_back();
-                    countConsectiveDays--;
-                    countMinutsAssigned -= T[t].length;
-
-                    countFreeConsectiveDays++;
-                    continue;
-                }
-                if( find( T[t].shifts_prohibited.begin(),T[t].shifts_prohibited.end(), t ) != T[t].shifts_prohibited.end() ) {
-                    var.horizon.pop_back();
-                    countConsectiveDays--;
-                    countMinutsAssigned -= T[t].length;
-
-                    countFreeConsectiveDays++;
-                    continue;
-                }
-
-
-
-
-                // OK?
-                if( countMinutsAssigned > employee.maxTotalMinutes) {
-                    var.horizon.pop_back();
-                    countConsectiveDays--;
-                    countMinutsAssigned -= T[t].length;
-
-                    countFreeConsectiveDays++;
-                    continue;
-                }
-                // check dayoff
+                // dayoff
                 if( find(employee.daysOff.begin(),employee.daysOff.end(), d ) != employee.daysOff.end() ) {
-                    // Goto: next day
                     var.horizon.pop_back();
                     countConsectiveDays--;
                     countMinutsAssigned -= T[t].length;
-
+                    countTypeShift[t]--;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
                     countFreeConsectiveDays++;
+
                     continue;
                 }
-                
-                if(t++ > T.size()) {
-                    // dom(T) = vacio
-                    // d++;
-                    break;
+
+
+                if( countConsectiveDays > employee.maxConsecutivesShift ) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+                    countTypeShift[t]--;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
+
+                    continue;
+                }
+
+                if( countMinutsAssigned > employee.maxTotalMinutes ) {
+                    var.horizon.pop_back();
+                    countConsectiveDays--;
+                    countMinutsAssigned -= T[t].length;
+                    countTypeShift[t]--;
+                    if( d%7 == 0  || d%6 == 0) {
+                        weekend--;
+                    }
+
+                    continue;
+                }
+
+                struct Assignment target =  var.horizon[d-1];
+                // check last day assigned
+                if( target.indexDay == d-1 ){
+                    char tmp = target.shift;
+                    if( find( T[t].shifts_prohibited.begin(),T[t].shifts_prohibited.end(), tmp ) != T[t].shifts_prohibited.end() ) {
+                        var.horizon.pop_back();
+                        countConsectiveDays--;
+                        countMinutsAssigned -= T[t].length;
+                        countTypeShift[t]--;
+                        if( d%7 == 0  || d%6 == 0) {
+                            weekend--;
+                        }
+                        continue;
+                    }
                 }
                 lastAssign = horizon;
+                okDay = 1;
             }
+            if( okDay == 0 ){
+                countFreeConsectiveDays++;
+            }
+            okDay = 0;
+
+            // Verify d ok?
+
+
+
+
+
         }
+        // save all horizon of employee i
         varXidt.push_back(var);
         countConsectiveDays = 0;
         countFreeConsectiveDays =0;
         countMinutsAssigned = 0;
+        okDay =0;
+
     }
 
 
@@ -575,6 +601,25 @@ void solve( ) {
 
 
 
+
+}
+
+
+
+
+
+void printResult() {
+    for( int i=0; i<varXidt.size(); i++ ) {
+        string horizon = "";
+        //printf("%s\n___\n", varXidt[i].idEmployee);
+        for( int j=0; j<varXidt[i].horizon.size(); j++){
+            horizon += "(" +to_string(varXidt[i].horizon[j].indexDay)+","+varXidt[i].horizon[j].shift+") ";
+            //printf("(%d,%c)\n", varXidt[i].horizon[j].indexDay,varXidt[i].horizon[j].shift);
+        }
+        printf("%s: %s\n", varXidt[i].idEmployee, horizon.c_str());
+
+
+    }
 }
 
 
@@ -582,10 +627,8 @@ void solve( ) {
 
 int main( int argc, char *argv[] ) {
 
-    // BORRAR
-    // struct timeval begin, end;
-    // gettimeofday(&begin, 0);
-    //END BORRAR
+    //struct timeval begin, end;
+    //gettimeofday(&begin, 0);
 
     if( argc > 2) {
         FILE *fp;
@@ -603,6 +646,7 @@ int main( int argc, char *argv[] ) {
         cout<<"Lectura de la instancia finalizada.\n";
         cout<<"Iniciando calculos ....\n";
         solve( );
+        printResult();
         fclose(fp);
     } else {
         printf("Revise los parámetros de inicialización.");

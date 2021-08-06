@@ -33,3 +33,5 @@ $ make clear
 ## Instancias
 Son archivos que contienen todos los parámetros necesarios para que la F.O. del problema
 encuentre la(s) solución(es)
+### Modificación de instancias
+En las instancias 10 y 12 se debe modificar los indentificadores de cada turno a char de largo 1 para que el algoritmo planifique sin problema.

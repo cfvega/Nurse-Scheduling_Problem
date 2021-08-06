@@ -689,7 +689,7 @@ int main( int argc, char *argv[] ) {
     struct timeval begin, end;
     gettimeofday(&begin, 0);
 
-    if( argc > 2) {
+    if( argc > 1) {
         FILE *fp;
         fp = fopen(argv[1], "r");
         // cout<<"Iniciando lectura de la instancia...\n";
@@ -700,7 +700,7 @@ int main( int argc, char *argv[] ) {
         long seconds = end.tv_sec - begin.tv_sec;
         long microseconds = end.tv_usec - begin.tv_usec;
         double elapsed = seconds + microseconds*1e-6;
-        printf("Time measured: %.3f seconds.\n", elapsed);
+        printf("Time measured: %.8f seconds.\n", elapsed);
         
         // cout<<"Lectura de la instancia finalizada.\n";
         // cout<<"Iniciando calculos ....\n";
